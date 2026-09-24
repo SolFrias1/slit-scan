@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tiempo e imagen: Slit Scan</title>
+<meta name="description" content="Carga un video, apila sus frames en 3D, procésalos y anímalos con keyframes.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎞️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header>
+  <h1><b>Tiempo e imagen:</b> Slit Scan</h1>
+  <p>Carga un video y sepáralo en imágenes. Apílalas en el espacio, procésalas y anímalas con keyframes.</p>
+</header>
+
+<main class="app">
+  <aside class="panel" aria-label="Controles">
+    <details class="step" open>
+      <summary><span class="n">1</span>Video</summary>
+      <div class="body">
+        <div class="btns" style="margin-top:0">
+          <button class="btn primary" id="pick">Elegir video</button>
+        </div>
+        <input type="file" id="file" accept="video/*" hidden>
+        <video class="preview" id="video" muted playsinline preload="auto" controls></video>
+        <div class="meta" id="meta">MP4 (H.264) y WebM funcionan en casi todos los navegadores. El video no sale de tu equipo.</div>
+      </div>
+    </details>
+
+    <details class="step" id="stepExtract">
+      <summary><span class="n">2</span>Extraer frames</summary>
+      <div class="body">
+        <div id="box-extract"></div>
+        <div class="sub">Resolución de trabajo</div>
+        <div class="seg" role="group" aria-label="Resolución de trabajo">
+          <button type="button" data-work="auto" aria-pressed="true">Auto</button>
+          <button type="button" data-work="1" aria-pressed="false">100 %</button>
+          <button type="button" data-work="0.5" aria-pressed="false">50 %</button>
+          <button type="button" data-work="0.25" aria-pressed="false">25 %</button>
+        </div>
+        <p class="hint">La vista usa esta resolución para ir fluida. Las capturas y videos se exportan siempre a resolución completa.</p>
+        <div class="estimate" id="estimate">Carga un video para calcular cuántos frames saldrán.</div>
+        <div class="btns"><button class="btn primary" id="extract" disabled>Extraer frames</button></div>
+      </div>
+    </details>
+
+    <details class="step">
+      <summary><span class="n">3</span>Ordenar en Z</summary>
+      <div class="body">
+        <div id="box-order"></div>
+        <p class="hint">Cada frame mide 100 u de ancho a escala 1, así que 1 u equivale al 1 % del ancho de un frame.</p>
+        <label class="check"><input type="checkbox" id="invert"> Invertir el orden en Z (el primer frame queda adelante)</label>
+      </div>
+    </details>
+
+    <details class="step">
+      <summary><span class="n">4</span>Frame de referencia</summary>
+      <div class="body">
+        <p class="hint">La escala, el giro, la opacidad y el edge fade parten de este frame y cambian hacia los dos extremos. Al reproducir, la referencia avanza sola.</p>
+        <div id="box-ref"></div>
+      </div>
+    </details>
+
+    <details class="step">
+      <summary><span class="n">5</span>Escala</summary>
+      <div class="body">
+        <div class="seg" role="group" aria-label="Forma de escalar los frames">
+          <button type="button" data-scale="const" aria-pressed="true">Constante</button>
+          <button type="button" data-scale="lin" aria-pressed="false">Lineal</button>
+          <button type="button" data-scale="wave" aria-pressed="false">Onda</button>
+        </div>
+        <p class="hint" id="scaleHint"></p>
+        <div id="box-scale-base"></div>
+        <div id="box-scale-lin" hidden></div>
+        <div id="box-scale-wave" hidden></div>
+      </div>
+    </details>
+
+    <details class="step">
+      <summary><span class="n">6</span>Rotación en Z</summary>
+      <div class="body">
+        <div id="box-rot"></div>
+        <p class="hint">Grados enteros que se suman frame a frame desde el seleccionado, en un sentido hacia adelante y en el contrario hacia atrás.</p>
+        <div class="btns"><button class="btn" id="zero">Poner giro en cero</button></div>
+      </div>
+    </details>
+
+    <details class="step">
+      <summary><span class="n">7</span>Opacidad y edge fade</summary>
+      <div class="body">
+        <div id="box-look"></div>
+        <p class="hint">El edge fade desvanece los bordes de cada frame; la irregularidad los deshace en grano.</p>
+        <label class="check"><input type="checkbox" id="additive"> Mezcla aditiva (los frames suman luz)</label>
+      </div>
+    </details>
+
+    <details class="step">
+      <summary><span class="n">8</span>Procesar imagen</summary>
+      <div class="body">
+        <div class="sub" style="margin-top:0">Recorte por brillo o color</div>
+        <div class="seg" role="group" aria-label="Tipo de recorte">
+          <button type="button" data-key="none" aria-pressed="true">Ninguno</button>
+          <button type="button" data-key="luma" aria-pressed="false">Brillo</button>
+          <button type="button" data-key="chroma" aria-pressed="false">Color</button>
+        </div>
+        <div id="box-luma" hidden>
+          <label class="check"><input type="checkbox" id="lumaInv"> Quitar las zonas claras en vez de las oscuras</label>
+        </div>
+        <div id="box-chroma" hidden>
+          <div class="colors">
+            <label>Color a quitar <input type="color" id="keyColor" value="#00ff00"></label>
+            <button type="button" class="btn sm" id="keyPick">Tomar de un frame</button>
+          </div>
+        </div>
+        <div class="sub">Movimiento</div>
+        <label class="check"><input type="checkbox" id="motionOn"> Mostrar solo lo que cambia entre frames</label>
+        <div id="box-motion" hidden></div>
+        <div class="sub">Teñir por tiempo</div>
+        <div class="colors">
+          <label>Inicio <input type="color" id="tintA" value="#3e63dd"></label>
+          <label>Final <input type="color" id="tintB" value="#f2a93b"></label>
+        </div>
+        <div id="box-tint"></div>
+      </div>
+    </details>
+
+    <details class="step" id="stepAnim">
+      <summary><span class="n">9</span>Animación</summary>
+      <div class="body">
+        <p class="hint">Guarda keyframes con el estado actual: cámara, frame seleccionado, escala, giro, opacidad, edge fade y procesamiento. Entre keyframes los valores se interpolan.</p>
+        <div id="box-anim"></div>
+        <div class="tl">
+          <div class="tl-marks" id="tlMarks"></div>
+          <input type="range" id="animT" min="0" max="5" step="0.01" value="0" aria-label="Tiempo de la animación">
+        </div>
+        <div class="tlinfo"><span id="animClock">0 s de 5 s</span><span id="kfCount">Sin keyframes</span></div>
+        <div class="btns">
+          <button class="btn primary" id="animPlay">Reproducir animación</button>
+          <button class="btn" id="kfAdd">Añadir keyframe</button>
+          <button class="btn" id="kfDel">Borrar keyframe</button>
+          <button class="btn" id="kfClear">Borrar todos</button>
+        </div>
+        <label class="check"><input type="checkbox" id="animEase" checked> Suavizar entre keyframes</label>
+        <label class="check"><input type="checkbox" id="animLoop" checked> Repetir</label>
+        <div class="sub">Atajos (reemplazan los keyframes)</div>
+        <div class="presets">
+          <button type="button" class="btn sm" id="quickOrbit">Órbita de cámara</button>
+          <button type="button" class="btn sm" id="quickWalk">Recorrido de frames</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="step">
+      <summary><span class="n">10</span>Vista</summary>
+      <div class="body">
+        <div class="sub" style="margin-top:0">Fondo</div>
+        <div class="seg" role="group" aria-label="Color de fondo">
+          <button type="button" data-bg="black" aria-pressed="true">Negro</button>
+          <button type="button" data-bg="white" aria-pressed="false">Blanco</button>
+          <button type="button" data-bg="pick" aria-pressed="false">Cuentagotas</button>
+        </div>
+        <div class="bgrow"><span class="swatch" id="bgSwatch"></span><span id="bgText">#000000</span></div>
+        <label class="check"><input type="checkbox" id="outlineOn" checked> Marcar el frame seleccionado</label>
+        <label class="check"><input type="checkbox" id="axes" checked> Mostrar referencia de ejes</label>
+        <label class="check"><input type="checkbox" id="frontClip" checked> Vista frontal: ocultar lo que queda delante del seleccionado</label>
+        <label class="check"><input type="checkbox" id="frontSpin"> Vista frontal: la cámara gira con el frame</label>
+        <div class="btns"><button class="btn" id="resetView">Restablecer vista</button></div>
+      </div>
+    </details>
+
+    <details class="step">
+      <summary><span class="n">11</span>Exportar</summary>
+      <div class="body">
+        <div class="btns" style="margin-top:0">
+          <button class="btn" id="dlOne" disabled>Descargar frame</button>
+          <button class="btn" id="dlShot" disabled>Captura vista 3D</button>
+          <button class="btn" id="dlVidFront" disabled>Descargar video frontal</button>
+          <button class="btn" id="dlVid3d" disabled>Descargar video vista 3D</button>
+        </div>
+        <p class="hint">Los videos frontal y vista 3D recorren la pila completa a la velocidad de reproducción. El video vista 3D usa la vista Libre o Isométrica tal como la tengas.</p>
+        <div class="btns" style="margin-top:4px">
+          <button class="btn" id="dlAnim3d" disabled>Video de la animación</button>
+        </div>
+        <p class="hint">El video de la animación sigue tus keyframes con la vista que tengas. Si «Marcar el frame seleccionado» está activo, el marco también sale en las exportaciones.</p>
+      </div>
+    </details>
+
+    <footer class="credits">
+      <p>Desarrollado por <b>Felipe Roa R.</b><br>
+      <a href="https://www.instagram.com/fefeliperoa/" target="_blank" rel="noopener">@fefeliperoa</a><br>
+      DPPI / Escuela de Diseño UDP<br>
+      2026</p>
+      <p>Inspirado en el trabajo de <a href="https://www.instagram.com/p_h_r_o_/" target="_blank" rel="noopener">@p_h_r_o_</a></p>
+    </footer>
+  </aside>
+
+  <section class="stage" aria-label="Vista 3D">
+    <div class="viewport" id="viewport" tabindex="0" aria-label="Vista 3D de los frames. Espacio reproduce o pausa, las flechas cambian de frame.">
+      <div id="gl" style="position:absolute; inset:0"></div>
+      <div class="empty" id="empty">
+        <div class="inner">
+          <div class="big" id="emptyTitle">Arrastra un video aquí</div>
+          <p id="emptyText">O elígelo desde tu equipo. Luego extrae sus frames y ordénalos en el espacio.</p>
+          <button class="btn primary" id="pick2">Elegir video</button>
+        </div>
+      </div>
+      <div class="progress" id="progress">
+        <div id="progressText">Extrayendo…</div>
+        <div class="bar"><i id="progressBar"></i></div>
+      </div>
+      <div class="orbit-hint" id="orbitHint" hidden></div>
+      <svg class="gizmo" id="gizmo" viewBox="-35 -35 70 70" aria-hidden="true" hidden></svg>
+      <div class="hud" id="hud" hidden></div>
+    </div>
+
+    <div class="transport">
+      <div class="seg" role="group" aria-label="Tipo de vista">
+        <button type="button" data-view="free" aria-pressed="true">Libre</button>
+        <button type="button" data-view="front" aria-pressed="false">Frontal</button>
+        <button type="button" data-view="iso" aria-pressed="false">Isométrica</button>
+      </div>
+      <div class="playrow">
+        <button class="btn primary play" id="play" disabled><svg viewBox="0 0 14 14" aria-hidden="true"><path id="playIcon" d="M3 1.5v11l9-5.5z"/></svg><span id="playLabel">Reproducir</span></button>
+        <input type="range" id="scrub" min="1" max="1" step="1" value="1" aria-label="Frame actual" disabled>
+        <span class="clock" id="clock">Sin frames</span>
+      </div>
+      <div class="playopts">
+        <label>Velocidad <span class="numwrap"><input type="number" id="playFps" min="1" max="60" step="1" value="12"><span class="unit">fps</span></span></label>
+        <label>Al terminar
+          <select id="loopMode">
+            <option value="loop">Volver al inicio</option>
+            <option value="pingpong">Ida y vuelta</option>
+            <option value="once">Detener</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="strip" id="strip" aria-label="Frames extraídos"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
