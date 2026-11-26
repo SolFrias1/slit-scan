@@ -37,3 +37,9 @@ DPPI / Escuela de Diseño UDP
 2026
 
 Inspirado en el trabajo de [@p_h_r_o_](https://www.instagram.com/p_h_r_o_/).
+
+## Ejercicio de experimentación visual realizado a partir de la herramienta Slit Scan.
+
+A través de la exploración de las posibilidades de procesamiento y transformación temporal de una secuencia de video, se desarrolló una pieza audiovisual utilizando la herramienta existente.
+
+Participación: exploración y producción de video mediante la herramienta. No se realizaron modificaciones al código fuente ni al funcionamiento original del repositorio.
