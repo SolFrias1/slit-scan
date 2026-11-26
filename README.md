@@ -40,6 +40,6 @@ Inspirado en el trabajo de [@p_h_r_o_](https://www.instagram.com/p_h_r_o_/).
 
 ## Ejercicio de experimentación visual realizado a partir de la herramienta Slit Scan.
 
-A través de la exploración de las posibilidades de procesamiento y transformación temporal de una secuencia de video, se desarrolló una pieza audiovisual utilizando la herramienta existente.
+A través de la exploración de las posibilidades de procesamiento y transformación temporal de una secuencia de video, se desarrolló una pieza visual utilizando la herramienta existente, pero jugando con el sentimentalismo y la manera de abstracción de imagen, para que se evoque un sentimiento de añoranza o inocencia de recuerdo; aún cuando la imagen se encuentra contrastada en negro, el amor a un can juega con las luces a la vista, en ida y vuelta con rapidez y borrosidad de memoria.
 
 Participación: exploración y producción de video mediante la herramienta. No se realizaron modificaciones al código fuente ni al funcionamiento original del repositorio.
